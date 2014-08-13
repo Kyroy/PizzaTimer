@@ -27,6 +27,7 @@ function PizzaTimer:new(o)
 	o.run = false
 	o.settings = {
 		defaultTime = 10*60.0,
+		repeatAlarm = false,
 		posX = 10,
 		posY = 10,
 		sizeX = 230,
@@ -68,7 +69,7 @@ function PizzaTimer:OnDocLoaded()
 			Apollo.AddAddonErrorText(self, "Could not load the main window for some reason.")
 			return
 		end
-		self.wndOption = Apollo.LoadForm(self.xmlDoc, "PizzaTimerForm", nil, self)
+		self.wndOption = Apollo.LoadForm(self.xmlDoc, "PizzaOptionForm", nil, self)
 		if self.wndOption == nil then
 			Apollo.AddAddonErrorText(self, "Could not load the option window for some reason.")
 			return
@@ -94,11 +95,15 @@ function PizzaTimer:OnDocLoaded()
 			self.wndMain:FindChild("TimeBox"):SetText(self.settings.defaultTime/60)	
 			self:updateTime()
 			
+			self.settings.repeatAlarm = self.restoreData.repeatAlarm or false
+			self.wndOption:FindChild("RepeatAlarmButton"):SetCheck(self.settings.repeatAlarm)
+			
 			self.settings.posX = self.restoreData.posX
 			self.settings.posY = self.restoreData.posY
 			self.settings.sizeX= self.restoreData.sizeX
 			self.settings.sizeY= self.restoreData.sizeY
 			self.wndMain:SetAnchorOffsets(self.settings.posX, self.settings.posY, self.settings.posX+self.restoreData.sizeX, self.settings.posY+self.restoreData.sizeY)
+			self.wndOption:SetAnchorOffsets( self.settings.posX+self.restoreData.sizeX-15, self.settings.posY, self.settings.posX+self.restoreData.sizeX+195, self.settings.posY+100)
 		end
 	end
 end
@@ -119,8 +124,12 @@ function PizzaTimer:OnTimer()
 		self.time = self.time - 0.5
 		if self.time <= 0 then
 			Sound.Play(Sound.PlayUIWindowAuctionHouseOpen)
-			self.run = false
-			self.time = self.settings.defaultTime
+			if not self.settings.repeatAlarm then
+				self.run = false
+				self.time = self.settings.defaultTime
+			else
+				self.time = 0
+			end
 		end
 		self:updateTime()
 	end
@@ -157,14 +166,22 @@ function PizzaTimer:OnOptionButton( wndHandler, wndControl, eMouseButton )
 end
 
 function PizzaTimer:OnStartButton( wndHandler, wndControl, eMouseButton )
-	if self.time and self.time > 0 then
-		self.run = not self.run
+	self.run = not self.run
+	if self.run then
+		self.wndMain:FindChild("StartButton"):SetText("Pause")
+		if self.time <= 0 then
+			self.time = self.settings.defaultTime
+			self:updateTime()
+		end
+	else
+		self.wndMain:FindChild("StartButton"):SetText("Start")
 	end
 end
 
 function PizzaTimer:OnResetButton( wndHandler, wndControl, eMouseButton )
 	self.run = false
 	self.time = self.settings.defaultTime
+	self.wndMain:FindChild("StartButton"):SetText("Start")
 	self:updateTime()
 end
 
@@ -187,6 +204,8 @@ function PizzaTimer:PizzaTimerFormDragDropEnd( wndHandler, wndControl, strType, 
 	self.settings.posX, self.settings.posY, tmpX, tmpY = self.wndMain:GetAnchorOffsets()
 	self.settings.sizeX = tmpX - self.settings.posX
 	self.settings.sizeY = tmpY - self.settings.posY
+	
+	self.wndOption:SetAnchorOffsets(tmpX-15, self.settings.posY, tmpX+195, self.settings.posY+100)
 end
 
 -----------------------------------------------------------------------------------------------
@@ -203,6 +222,21 @@ function PizzaTimer:OnRestore(eLevel, tData)
 	if tData then
 		self.restoreData = tData
 	end
+end
+
+---------------------------------------------------------------------------------------------------
+-- PizzaOptionForm Functions
+---------------------------------------------------------------------------------------------------
+
+function PizzaTimer:OnOptionCloseButton( wndHandler, wndControl, eMouseButton )
+	self.wndOption:Close()
+end
+
+function PizzaTimer:OnRepeatAlarmButtonCheck( wndHandler, wndControl, eMouseButton )
+	self.settings.repeatAlarm = true
+end
+function PizzaTimer:OnRepeatAlarmButtonUncheck( wndHandler, wndControl, eMouseButton )
+	self.settings.repeatAlarm = false
 end
 
 -----------------------------------------------------------------------------------------------
