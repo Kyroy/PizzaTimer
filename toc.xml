@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Addon Author="Kyroy" APIVersion="9" Name="PizzaTimer" Description="Just a simple timer for your pizza.">
+    <Script Name="PizzaTimer.lua"/>
+    <Form Name="PizzaTimer.xml"/>
+</Addon>
